@@ -266,11 +266,11 @@ if (!loggedIn) {
             '<p class="card-text small text-muted text-truncate" title="' + safeLinkTitle + '">' + shortLink + '</p>' +
             '<div class="mt-auto d-flex justify-content-between align-items-center">' +
               '<div class="btn-group" role="group">' +
-                // ✅ Facebook 開啟（可點）
+                // Facebook 可點
                 '<button class="btn btn-sm btn-outline-primary btn-fb" title="發送到 Facebook">' +
                   '<i class="bi bi-facebook"></i>' +
                 '</button>' +
-                // 其他社群先佔位（停用灰色）
+                // 其他社群暫時灰色
                 '<button class="btn btn-sm btn-outline-secondary" disabled title="X / Twitter 待開發">' +
                   '<i class="bi bi-twitter-x"></i>' +
                 '</button>' +
@@ -294,7 +294,6 @@ if (!loggedIn) {
 
       const btnFb = col.querySelector(".btn-fb");
       btnFb.addEventListener("click", function () {
-        // 組 FB 貼文＆留言內容給你確認
         const postText =
           "【" + title + "】\\n\\n" +
           "#新聞連結在留言處\\n" +
@@ -321,15 +320,12 @@ if (!loggedIn) {
       rssList.appendChild(col);
     }
 
-    // 更新「最後更新時間」（台灣時間＝瀏覽器時間）
     updateLastRefresh();
   }
 
   refreshBtn.onclick = loadRss;
-  loadRss();                         // 初次載入
-  setInterval(loadRss, 60 * 1000);   // 每分鐘抓一次 RSS
-
-  // 每 5 分鐘整頁重整一次
+  loadRss();
+  setInterval(loadRss, 60 * 1000);
   setInterval(function () {
     location.reload();
   }, 5 * 60 * 1000);
@@ -364,13 +360,11 @@ if (!loggedIn) {
       tgImageUrl.value = "";
     }
 
-    // 預設：標題 + 短網址（沒有導言）
     tgText.value = title + "\\n" + link;
     tgStatus.textContent = "";
     tgModal.show();
   }
 
-  // 改圖片 URL 預覽
   tgImageUrl.addEventListener("input", () => {
     const url = tgImageUrl.value.trim();
     if (url) {
@@ -382,7 +376,6 @@ if (!loggedIn) {
     }
   });
 
-  // 新增導言：使用 description，純文字
   tgIntroBtn.addEventListener("click", () => {
     if (!currentPayload) return;
     let intro = (currentPayload.description || "").trim();
@@ -394,12 +387,6 @@ if (!loggedIn) {
     const title = currentPayload.title || "";
     const link = currentPayload.link || "";
 
-    // 有按新增導言：
-    // 標題
-    //
-    // 導言（原文多行）
-    //
-    // 短網址
     tgText.value = title + "\\n\\n" + intro + "\\n\\n" + link;
     tgStatus.textContent = "";
   });
@@ -407,11 +394,8 @@ if (!loggedIn) {
   tgSendBtn.addEventListener("click", async () => {
     if (!currentPayload) return;
 
-    // 二次確認，避免誤發
     const ok = window.confirm("確定要發送到 Telegram？");
-    if (!ok) {
-      return;
-    }
+    if (!ok) return;
 
     tgSendBtn.disabled = true;
     tgStatus.textContent = "發送中...";
@@ -453,7 +437,27 @@ if (!loggedIn) {
       alert("已送出到 Facebook");
     } else {
       const data = await res.json().catch(() => ({}));
-      alert("Facebook 發送失敗\\n" + (data.error || ""));
+      let msg = "Facebook 發送失敗";
+
+      if (data.error) {
+        msg += "\\n\\n錯誤：";
+        if (typeof data.error === "string") {
+          msg += data.error;
+        } else {
+          msg += JSON.stringify(data.error, null, 2);
+        }
+      }
+      if (data.detail) {
+        msg += "\\n\\n詳細資訊：\\n";
+        if (typeof data.detail === "string") {
+          msg += data.detail;
+        } else {
+          msg += JSON.stringify(data.detail, null, 2);
+        }
+      }
+
+      alert(msg);
+      console.log("FB ERROR:", data);
     }
   }
 }
@@ -601,7 +605,7 @@ export default {
       });
     }
 
-    // 📌 Facebook 發送
+    // Facebook 發送
     if (url.pathname === "/api/publish/facebook" && request.method === "POST") {
       const user = await requireUser(request, env);
       if (!user) {
@@ -637,7 +641,6 @@ export default {
 
       try {
         if (imageUrl) {
-          // 有圖片：先發 photo 貼文
           const params = new URLSearchParams();
           params.set("url", imageUrl);
           params.set("caption", postText);
@@ -665,7 +668,6 @@ export default {
 
           postId = data.post_id || data.id || null;
         } else {
-          // 沒有圖片：用文字貼文
           const params = new URLSearchParams();
           params.set("message", postText);
           params.set("access_token", accessToken);
@@ -693,7 +695,6 @@ export default {
           postId = data.id || null;
         }
 
-        // 在剛剛那則貼文底下留言「標題 + 短網址」
         if (postId && commentText) {
           const cParams = new URLSearchParams();
           cParams.set("message", commentText);
