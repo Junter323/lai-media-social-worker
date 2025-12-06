@@ -1,0 +1,8 @@
+name = "lai-media-social-worker"
+main = "worker.js"
+compatibility_date = "2025-12-06"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lai_media_social_db"
+database_id = "9ea64f8c-31ba-4fb0-95c4-2145f43c3ce8"
